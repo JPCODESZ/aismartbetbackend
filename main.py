@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-import httpx
+from fastapi.middleware.cors import CORSMiddleware
+import requests
 import os
 from dotenv import load_dotenv
 
@@ -7,32 +8,49 @@ load_dotenv()
 
 app = FastAPI()
 
-ODDS_API_KEY = os.getenv('ODDS_API_KEY')
-ODDS_API_URL = 'https://api.the-odds-api.com/v4/sports'
+# ✅ Enable CORS for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or restrict to ["https://aismartbetfrontend.vercel.app"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get('/')
+# ✅ Read Odds API key from .env
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
+BASE_URL = "https://api.the-odds-api.com/v4/sports"
+
+# ✅ Root route (optional)
+@app.get("/")
 def read_root():
-    return {"status": "Betting AI Backend running!"}
+    return {"message": "AI SmartBet Backend is running 🚀"}
 
-@app.get('/sports')
+# ✅ Get available sports
+@app.get("/sports")
 def get_sports():
-    response = httpx.get(f"{ODDS_API_URL}?apiKey={ODDS_API_KEY}")
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail="Error fetching sports")
-    return response.json()
+    try:
+        response = requests.get(f"{BASE_URL}", params={"apiKey": ODDS_API_KEY})
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get('/odds/{sport_key}')
-def get_odds(sport_key: str, regions: str = 'us', markets: str = 'h2h'):
-    odds_response = httpx.get(
-        f"{ODDS_API_URL}/{sport_key}/odds",
-        params={
-            'apiKey': ODDS_API_KEY,
-            'regions': regions,
-            'markets': markets,
+# ✅ Get odds for a specific sport
+@app.get("/odds/{sport_key}")
+def get_odds(sport_key: str):
+    try:
+        url = f"{BASE_URL}/{sport_key}/odds"
+        params = {
+            "apiKey": ODDS_API_KEY,
+            "regions": "us",           # or "us,uk"
+            "markets": "h2h",          # head-to-head odds
+            "oddsFormat": "decimal",
+            "dateFormat": "iso"
         }
-    )
 
-    if odds_response.status_code != 200:
-        raise HTTPException(status_code=odds_response.status_code, detail="Error fetching odds")
-
-    return odds_response.json()
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
