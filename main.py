@@ -1,33 +1,33 @@
-
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
 from dotenv import load_dotenv
 
+# Load .env variables
 load_dotenv()
 
 app = FastAPI()
 
-# ✅ Enable CORS for frontend access
+# Enable CORS for all domains (frontend needs this)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or restrict to ["https://aismartbetfrontend.vercel.app"]
+    allow_origins=["*"],  # Replace "*" with ["https://aismartbetfrontend.vercel.app"] for more security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Read Odds API key from .env
+# Load your Odds API key
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 BASE_URL = "https://api.the-odds-api.com/v4/sports"
 
-# ✅ Root route (optional)
+# Root route (optional)
 @app.get("/")
 def read_root():
-    return {"message": "AI SmartBet Backend is running 🚀"}
+    return {"message": "AI SmartBet backend is live 🚀"}
 
-# ✅ Get available sports
+# Get list of available sports
 @app.get("/sports")
 def get_sports():
     try:
@@ -37,16 +37,16 @@ def get_sports():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ Get odds for a specific sport
+# Get odds for a specific sport (e.g., basketball_nba)
 @app.get("/odds/{sport_key}")
 def get_odds(sport_key: str):
     try:
         url = f"{BASE_URL}/{sport_key}/odds"
         params = {
             "apiKey": ODDS_API_KEY,
-            "regions": "us",           # or "us,uk"
-            "markets": "h2h",          # head-to-head odds
-            "oddsFormat": "decimal",
+            "regions": "us",            # or "us,uk,eu"
+            "markets": "h2h",           # head-to-head bets
+            "oddsFormat": "decimal",    # or "american"
             "dateFormat": "iso"
         }
 
