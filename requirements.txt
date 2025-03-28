@@ -3,3 +3,7 @@ uvicorn[standard]
 httpx
 requests   
 python-dotenv
+pandas
+xgboost
+scikit-learn
+joblib
