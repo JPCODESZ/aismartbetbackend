@@ -1,57 +1,66 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import requests
-import os
 from dotenv import load_dotenv
+import os
+import requests
 
-# Load .env variables
+from ai_picks import find_best_bets  # 👈 AI picks import
+
 load_dotenv()
 
 app = FastAPI()
 
-# Enable CORS for all domains (frontend needs this)
+# ✅ CORS setup (frontend can call backend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace "*" with ["https://aismartbetfrontend.vercel.app"] for more security
+    allow_origins=["*"],  # Or set to your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load your Odds API key
-ODDS_API_KEY = os.getenv("ODDS_API_KEY")
-BASE_URL = "https://api.the-odds-api.com/v4/sports"
-
-# Root route (optional)
+# ✅ Root route
 @app.get("/")
 def read_root():
-    return {"message": "AI SmartBet backend is live 🚀"}
+    return {"message": "AI SmartBet Backend is running 🚀"}
 
-# Get list of available sports
+# ✅ Available sports from Odds API
 @app.get("/sports")
 def get_sports():
     try:
-        response = requests.get(f"{BASE_URL}", params={"apiKey": ODDS_API_KEY})
+        response = requests.get(
+            "https://api.the-odds-api.com/v4/sports",
+            params={"apiKey": os.getenv("ODDS_API_KEY")}
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get odds for a specific sport (e.g., basketball_nba)
+# ✅ Get live odds for a sport
 @app.get("/odds/{sport_key}")
 def get_odds(sport_key: str):
     try:
-        url = f"{BASE_URL}/{sport_key}/odds"
+        url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds"
         params = {
-            "apiKey": ODDS_API_KEY,
-            "regions": "us",            # or "us,uk,eu"
-            "markets": "h2h",           # head-to-head bets
-            "oddsFormat": "decimal",    # or "american"
-            "dateFormat": "iso"
+            "apiKey": os.getenv("ODDS_API_KEY"),
+            "regions": "us",
+            "markets": "h2h",
+            "oddsFormat": "decimal",
         }
-
         response = requests.get(url, params=params)
         response.raise_for_status()
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ✅ AI Picks route
+@app.get("/ai-picks")
+def get_ai_picks():
+    upcoming = [
+        {"home_team": "Lakers", "away_team": "Suns", "home_odds": 1.75, "away_odds": 2.10},
+        {"home_team": "Celtics", "away_team": "Heat", "home_odds": 2.05, "away_odds": 1.70},
+        {"home_team": "Bucks", "away_team": "Knicks", "home_odds": 1.62, "away_odds": 2.30},
+    ]
+    picks = find_best_bets(upcoming)
+    return picks
