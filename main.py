@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 import requests
 
-from ai_picks import find_best_bets  # 👈 Make sure this file exists
+
 
 load_dotenv()
 
