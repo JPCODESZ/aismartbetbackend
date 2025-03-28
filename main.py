@@ -4,27 +4,27 @@ from dotenv import load_dotenv
 import os
 import requests
 
-from ai_picks import find_best_bets  # 👈 AI picks import
+from ai_picks import find_best_bets  # 👈 Make sure this file exists
 
 load_dotenv()
 
 app = FastAPI()
 
-# ✅ CORS setup (frontend can call backend)
+# ✅ CORS setup for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or set to your frontend domain
+    allow_origins=["*"],  # Or set to your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Root route
+# ✅ Root health check
 @app.get("/")
 def read_root():
     return {"message": "AI SmartBet Backend is running 🚀"}
 
-# ✅ Available sports from Odds API
+# ✅ Get all sports
 @app.get("/sports")
 def get_sports():
     try:
@@ -37,7 +37,7 @@ def get_sports():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ Get live odds for a sport
+# ✅ Get odds for a specific sport
 @app.get("/odds/{sport_key}")
 def get_odds(sport_key: str):
     try:
@@ -46,7 +46,7 @@ def get_odds(sport_key: str):
             "apiKey": os.getenv("ODDS_API_KEY"),
             "regions": "us",
             "markets": "h2h",
-            "oddsFormat": "decimal",
+            "oddsFormat": "decimal"
         }
         response = requests.get(url, params=params)
         response.raise_for_status()
@@ -54,7 +54,7 @@ def get_odds(sport_key: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ AI Picks route
+# ✅ AI-Powered Betting Picks
 @app.get("/ai-picks")
 def get_ai_picks():
     upcoming = [
@@ -62,5 +62,4 @@ def get_ai_picks():
         {"home_team": "Celtics", "away_team": "Heat", "home_odds": 2.05, "away_odds": 1.70},
         {"home_team": "Bucks", "away_team": "Knicks", "home_odds": 1.62, "away_odds": 2.30},
     ]
-    picks = find_best_bets(upcoming)
-    return picks
+    return find_best_bets(upcoming)
